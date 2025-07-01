@@ -49,6 +49,7 @@ dependencies = [
     "sqlalchemy-crud-plus>=1.10.0",
     "sqlalchemy[asyncio]>=2.0.40",
     "user-agents==2.2.0",
+    "fastapi-oauth20>=0.0.1"
 ]
 
 [dependency-groups]
