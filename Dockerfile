@@ -38,10 +38,10 @@ COPY --from=builder /usr/local /usr/local
 
 COPY deploy/backend/supervisord.conf /etc/supervisor/supervisord.conf
 
+WORKDIR /fba/backend
+
 # === FastAPI server image ===
 FROM base_server AS fastapi_server
-
-WORKDIR /fba
 
 COPY deploy/backend/fastapi_server.conf /etc/supervisor/conf.d/
 
@@ -49,12 +49,10 @@ RUN mkdir -p /var/log/fastapi_server
 
 EXPOSE 8001
 
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port","8000"]
+CMD ["/usr/local/bin/granian", "main:app", "--interface", "asgi", "--host", "0.0.0.0", "--port","8000"]
 
 # === Celery server image ===
 FROM base_server AS celery
-
-WORKDIR /fba/backend
 
 COPY deploy/backend/celery.conf /etc/supervisor/conf.d/
 
