@@ -212,6 +212,10 @@ class Settings(BaseSettings):
     CELERY_REDIS_PREFIX: str = 'fba:celery'
     CELERY_TASK_MAX_RETRIES: int = 5
 
+    # API key 配置
+    API_KEY_REDIS_PREFIX: str = 'fba:api_key'
+    API_KEY_EXPIRE_SECONDS: int = 60 * 60 * 24 * 30  # 30 天
+
     # Plugin Code Generator
     CODE_GENERATOR_DOWNLOAD_ZIP_FILENAME: str = 'fba_generator'
 
