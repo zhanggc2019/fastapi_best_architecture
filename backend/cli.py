@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import asyncio
+import os
 import subprocess
 
 from dataclasses import dataclass
@@ -52,7 +53,10 @@ def run(host: str, port: int, reload: bool, workers: int | None) -> None:
 
 def run_celery_worker(log_level: Literal['info', 'debug']) -> None:
     try:
-        subprocess.run(['celery', '-A', 'backend.app.task.celery', 'worker', '-l', f'{log_level}', '-P', 'gevent'])
+        if os.name == 'nt':
+            subprocess.run(['celery', '-A', 'backend.app.task.celery', 'worker', '-l', f'{log_level}', '-P', 'solo'])
+        else:
+            subprocess.run(['celery', '-A', 'backend.app.task.celery', 'worker', '-l', f'{log_level}', '-P', 'gevent'])
     except KeyboardInterrupt:
         pass
 
@@ -183,8 +187,40 @@ class Flower:
 
 @cappa.command(help='运行 Celery 服务')
 @dataclass
+class RunAll:
+    if os.name == 'nt':
+        subcmd: cappa.Subcommands[Run | Worker | Beat | None] = None
+    else:
+        subcmd: cappa.Subcommands[Run | Worker | Beat | Flower | None] = None
+
+    def __call__(self):
+        import multiprocessing
+
+        # 启动API服务
+        api_process = multiprocessing.Process(target=Run(host='127.0.0.1', port=8000, no_reload=True, workers=None))
+        api_process.start()
+
+        # 启动Celery Worker
+        celery_worker_process = multiprocessing.Process(target=Worker(log_level='info'))
+        celery_worker_process.start()
+
+        # 启动Celery Beat
+        celery_beat_process = multiprocessing.Process(target=Beat(log_level='info'))
+        celery_beat_process.start()
+
+        # 等待所有进程完成
+        api_process.join()
+        celery_worker_process.join()
+        celery_beat_process.join()
+
+
+@cappa.command(help='运行 API和Celery 服务')
+@dataclass
 class Celery:
-    subcmd: cappa.Subcommands[Worker | Beat | Flower | None] = None
+    if os.name == 'nt':
+        subcmd: cappa.Subcommands[Worker | Beat | None] = None
+    else:
+        subcmd: cappa.Subcommands[Worker | Beat | Flower | None] = None
 
     def __call__(self):
         console.print('\n更多信息，尝试 "[cyan]--help[/]"')
@@ -229,7 +265,7 @@ class FbaCli:
         str,
         cappa.Arg(value_name='PATH', long=True, default='', show_default=False, help='在事务中执行 SQL 脚本'),
     ]
-    subcmd: cappa.Subcommands[Run | Celery | Add | None] = None
+    subcmd: cappa.Subcommands[Run | Celery | Add | RunAll | None] = None
 
     async def __call__(self):
         if self.version:

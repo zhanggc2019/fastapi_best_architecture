@@ -62,8 +62,8 @@ class Settings(BaseSettings):
 
     # Token
     TOKEN_ALGORITHM: str = 'HS256'
-    TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24  # 1 天
-    TOKEN_REFRESH_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # 7 天
+    TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # 7 天
+    TOKEN_REFRESH_EXPIRE_SECONDS: int = 60 * 60 * 24 * 30  # 30 天
     TOKEN_REDIS_PREFIX: str = 'fba:token'
     TOKEN_EXTRA_INFO_REDIS_PREFIX: str = 'fba:token_extra_info'
     TOKEN_ONLINE_REDIS_PREFIX: str = 'fba:token_online'
@@ -224,7 +224,7 @@ class Settings(BaseSettings):
             values['FASTAPI_OPENAPI_URL'] = None
             values['FASTAPI_STATIC_FILES'] = False
             # Task
-            values['CELERY_BROKER'] = 'rabbitmq'
+            values['CELERY_BROKER'] = 'redis'  # 生产推荐rabbitmq
 
         return values
 
