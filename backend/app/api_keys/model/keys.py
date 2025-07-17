@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime, timedelta
-from tkinter import N
 
 from sqlalchemy import (
     Boolean,
@@ -23,7 +22,7 @@ class ApiKeys(Base):
 
     __tablename__ = 'api_keys'
     id: Mapped[id_key] = mapped_column(init=False, comment='主键')
-    api_key: Mapped[str] = mapped_column(init=False, comment='api_key_hash')
+    api_key: Mapped[str] = mapped_column(String(50), comment='api_key_hash')
     name: Mapped[str] = mapped_column(String(50), unique=True, comment='api key名称')
     user_id: Mapped[str] = mapped_column(String(255), comment='key所属用户id')
     expire_time: Mapped[datetime | None] = mapped_column(
