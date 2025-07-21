@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+import secrets
+import time
+
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Query, Request
@@ -7,12 +12,13 @@ from fastapi import APIRouter, Body, Query, Request
 from backend.app.admin.model.user import User
 from backend.app.api_keys.schema.keys import ApiKeysSchema, CreateApiKeysSchema, UserCreateApiKeysSchema
 from backend.app.api_keys.service.keys_service import api_keys_service
-from backend.app.api_keys.utils import generate_signed_api_key
 from backend.common.pagination import DependsPagination, PageData, paging_data
 from backend.common.response.response_code import CustomResponse
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth, jwt_decode, superuser_verify
+from backend.core.conf import settings
 from backend.database.db import CurrentSession
+from backend.database.redis import redis_client
 
 router = APIRouter()
 
@@ -40,6 +46,7 @@ async def delete_api_key(user: User = DependsJwtAuth, id: int = Body(embed=True)
     auth_user = jwt_decode(user.credentials)
     count = await api_keys_service.delete(pk=id, user_id=auth_user.id)
     if count > 0:
+        await redis_client.delete(f"{settings.API_KEY_REDIS_PREFIX}{str(auth_user.id)}:" + str(id))
         return response_base.success()
     res = CustomResponse(code=400, msg='key不存在')
     return response_base.fail(res=res)
@@ -47,15 +54,26 @@ async def delete_api_key(user: User = DependsJwtAuth, id: int = Body(embed=True)
 
 @router.post('/add', summary='新增key')
 async def add_api_key(key: UserCreateApiKeysSchema, user: User = DependsJwtAuth) -> ResponseModel:
+    if key.expire_time:
+        expire_seconds = max(0, int((key.expire_time - datetime.now()).total_seconds()))
+        if expire_seconds <= 0:
+            return response_base.fail(res=CustomResponse(code=400, msg='过期时间必须大于当前时间'))
+    else:
+        expire_seconds = None
     auth_user = jwt_decode(user.credentials)
-    api_key = generate_signed_api_key(user_id=str(auth_user.id), expires_in_days=key.expire_time)
+    # 生成key并保存到redis
+    api_key_str = 'sk-' + secrets.token_urlsafe(32)
+    user_id = str(auth_user.id)
     key_create = CreateApiKeysSchema(
-        user_id=str(auth_user.id),
-        api_key=api_key,
+        user_id=user_id,
+        api_key=api_key_str,
         name=key.name,
         expire_time=key.expire_time,
     )
     api_key = await api_keys_service.add_key(key_create=key_create)
     if api_key:
+        # 计算与当前时间的秒数差（确保非负）
+        await redis_client.set(f"{settings.API_KEY_REDIS_PREFIX}{user_id}:" + str(api_key.id), 
+        api_key_str, ex=expire_seconds)
         return response_base.success()
     return response_base.fail()

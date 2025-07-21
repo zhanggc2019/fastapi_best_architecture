@@ -23,7 +23,7 @@ class ApiKeys(Base):
     name: Mapped[str] = mapped_column(String(50), comment='api key名称')
     user_id: Mapped[str] = mapped_column(String(255), comment='key所属用户id')
     expire_time: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now() + timedelta(days=30), comment='key过期截止时间'
+        DateTime(timezone=True), default=None, comment='key过期截止时间'
     )
     enabled: Mapped[bool] = mapped_column(
         Boolean().with_variant(INTEGER, 'postgresql'), default=True, comment='是否启用key'
