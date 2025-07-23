@@ -71,6 +71,7 @@ class Settings(BaseSettings):
     TOKEN_REQUEST_PATH_EXCLUDE: list[str] = [  # JWT / RBAC 路由白名单
         f'{FASTAPI_API_V1_PATH}/auth/login',
         f'{FASTAPI_API_V1_PATH}/auth/logout',
+        '/apis/*',  # 开放 API 路由白名单, 开放api使用申请的key访问
     ]
 
     # JWT
@@ -214,7 +215,6 @@ class Settings(BaseSettings):
 
     # API key 配置
     API_KEY_REDIS_PREFIX: str = 'fba:api_key:'
-    API_KEY_EXPIRE_SECONDS: int = 60 * 60 * 24 * 30  # 30 天
 
     # Plugin Code Generator
     CODE_GENERATOR_DOWNLOAD_ZIP_FILENAME: str = 'fba_generator'

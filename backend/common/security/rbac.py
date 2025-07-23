@@ -18,11 +18,11 @@ async def rbac_verify(request: Request, _token: str = DependsJwtAuth) -> None:
     :param _token: JWT 令牌
     :return:
     """
-    path = request.url.path
+    # path = request.url.path
 
     # API 鉴权白名单
-    if path in settings.TOKEN_REQUEST_PATH_EXCLUDE:
-        return
+    # if path in settings.TOKEN_REQUEST_PATH_EXCLUDE:
+    #     return
 
     # JWT 授权状态强制校验
     if not request.auth.scopes:

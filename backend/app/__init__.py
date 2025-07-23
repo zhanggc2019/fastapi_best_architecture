@@ -28,11 +28,9 @@ def get_app_models():
         except Exception as e:
             log.warning(f'应用 {app} 中不包含 model 相关配置: {e}')
             continue
-
         for name, obj in inspect.getmembers(module):
             if inspect.isclass(obj):
                 classes.append(obj)
-
     return classes
 
 

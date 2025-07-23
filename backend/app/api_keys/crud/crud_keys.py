@@ -13,7 +13,7 @@ class CRUDApiKeysResult(CRUDPlus[ApiKeys]):
 
     async def get_list(self, name: str | None, user_id: str | None) -> Select:
         """
-        获取任务结果列表
+        获取结果列表
 
         :param name:名称
         :param user_id: 用户ID
@@ -25,8 +25,16 @@ class CRUDApiKeysResult(CRUDPlus[ApiKeys]):
             filters['name__like'] = f'%{name}%'
         if user_id is not None:
             filters['user_id'] = user_id
-        # self.select_models_order
         return await self.select_order(sort_columns=['created_time'], **filters)
+
+    async def get_key(self, db: AsyncSession, api_key_id: str | None) -> Select:
+        """
+        根据主键获取api key
+
+        :param api_key_id: api key id
+        :return:
+        """
+        return await self.select_model(session=db, pk=api_key_id)
 
     async def delete(self, db: AsyncSession, pk: int, user_id: str) -> int:
         """

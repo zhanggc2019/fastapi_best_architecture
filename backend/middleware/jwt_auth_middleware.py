@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import re
+
 from typing import Any
 
 from fastapi import Request, Response
@@ -58,8 +60,18 @@ class JwtAuthMiddleware(AuthenticationBackend):
         token = request.headers.get('Authorization')
         if not token:
             return None
-
-        if request.url.path in settings.TOKEN_REQUEST_PATH_EXCLUDE:
+        path = request.url.path
+        excluded_patterns = []
+        for pattern in settings.TOKEN_REQUEST_PATH_EXCLUDE:
+            # API 鉴权白名单
+            # 将白名单通配符转换为正则表达式   
+            # 替换*为.*并添加起止锚点
+            cleaned_pattern = pattern.rstrip('/')
+            regex_pattern = f"^{cleaned_pattern.replace('*', '.*')}(/.*)?$"
+            excluded_patterns.append(re.compile(regex_pattern))
+    
+        # 检查路径是否匹配任何白名单模式
+        if any(pattern.match(path) for pattern in excluded_patterns):
             return None
 
         scheme, token = get_authorization_scheme_param(token)

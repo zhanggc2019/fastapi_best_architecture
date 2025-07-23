@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import secrets
+import time
 
 from datetime import datetime
 from typing import Annotated
@@ -43,9 +44,14 @@ async def get_keys_paged(
 @router.delete('', summary='删除key')
 async def delete_api_key(user: User = DependsJwtAuth, id: int = Body(embed=True)) -> ResponseModel:
     auth_user = jwt_decode(user.credentials)
+    api_key = await api_keys_service.get_key(api_key_id=id)
+    if not api_key:
+        res = CustomResponse(code=400, msg='key不存在')
+        return response_base.fail(res=res)
+    api_key_id = str(api_key.id)
     count = await api_keys_service.delete(pk=id, user_id=auth_user.id)
     if count > 0:
-        await redis_client.delete(f"{settings.API_KEY_REDIS_PREFIX}{str(auth_user.id)}:" + str(id))
+        await redis_client.delete(f"{settings.API_KEY_REDIS_PREFIX}" + api_key_id)
         return response_base.success()
     res = CustomResponse(code=400, msg='key不存在')
     return response_base.fail(res=res)
@@ -72,7 +78,6 @@ async def add_api_key(key: UserCreateApiKeysSchema, user: User = DependsJwtAuth)
     api_key = await api_keys_service.add_key(key_create=key_create)
     if api_key:
         # 计算与当前时间的秒数差（确保非负）
-        await redis_client.set(f"{settings.API_KEY_REDIS_PREFIX}{user_id}:" + str(api_key.id), 
-        api_key_str, ex=expire_seconds)
+        await redis_client.set(f"{settings.API_KEY_REDIS_PREFIX}" + api_key_str, api_key_str, ex=expire_seconds)
         return response_base.success()
     return response_base.fail()
