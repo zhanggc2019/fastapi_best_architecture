@@ -20,7 +20,6 @@ class ApiKeyAuth:
         # 如果Header中没有，从查询参数中获取
         if not api_key:
             api_key = request.query_params.get("api_key")
-        print(api_key,'------')
         return api_key
 
     @staticmethod
@@ -28,7 +27,6 @@ class ApiKeyAuth:
         """验证API Key并返回用户信息"""
         # 验证API Key
         api_key_str = await redis_client.get(f"{settings.API_KEY_REDIS_PREFIX}" + api_key)
-        print(api_key_str, '+++++', type(api_key_str), api_key)
         if not api_key_str:
             return False
         return True
